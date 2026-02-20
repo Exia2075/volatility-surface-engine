@@ -6,7 +6,6 @@
 
 from dataclasses import dataclass
 from models.black_scholes import bs_call_price, bs_vega
-
 import math
 
 TOLERANCE = 1e-6
@@ -17,7 +16,7 @@ SIGMA_HIGH = 10.0
 MIN_VEGA = 1e-10
 MIN_PRICE = 1e-6
 
-@dataclass
+@dataclass(slots=True, frozen=True)
 class IVResult:
     implied_vol : float | None
     converged: bool
