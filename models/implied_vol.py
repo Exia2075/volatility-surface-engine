@@ -4,9 +4,9 @@
 #  - try Newton-Raphson first (fast)
 #  - if NR diverges -> bisection (slower, but guarantees convergence if a solution indeed exists in [SIGMA_LOW, SIGMA_HIGH])
 
+import math
 from dataclasses import dataclass
 from models.black_scholes import bs_call_price, bs_vega
-import math
 
 TOLERANCE = 1e-6
 MAX_ITER_NR = 100
@@ -99,8 +99,6 @@ def compute_implied_vol(market_price: float,
     return _bisection(market_price, S, K, T, r, q)
 
 if __name__ == "__main__":
-    from models.black_scholes import bs_call_price
-
     test_cases = [
         ("ATM  1yr  20%",  100, 100, 1.00, 0.05, 0.00, 0.20),
         ("OTM  6mo  30%",  100, 110, 0.50, 0.05, 0.00, 0.30),
