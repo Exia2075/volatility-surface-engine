@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import os
+from collections import defaultdict
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
-from collections import defaultdict
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
 from models.volatility_surface import VolatilitySurface
 
 def plot_surface(surface: VolatilitySurface,
@@ -140,7 +139,7 @@ if __name__ == "__main__":
     builder = VolatilitySurfaceBuilder(axis_mode="moneyness", grid_size=50)
     surface = builder.build(contracts)
 
-    print(f"\nSurface stats:")
+    print("\nSurface stats:")
     print(f"IV range: {surface.iv_points.min():.1%} – {surface.iv_points.max():.1%}")
     print(f"T range: {surface.T_points.min()*365:.0f}d – {surface.T_points.max()*365:.0f}d")
     print(f"Y range: {surface.y_points.min():.2f} – {surface.y_points.max():.2f}")
