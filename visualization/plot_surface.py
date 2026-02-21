@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -81,6 +82,7 @@ def plot_surface(surface: VolatilitySurface,
     plt.tight_layout()
 
     if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         fig.savefig(save_path, dpi=150, bbox_inches="tight",
                     facecolor="white", edgecolor="none")
         print(f"[Plot] Surface saved to: {save_path}")
@@ -118,6 +120,7 @@ def plot_term(surface: VolatilitySurface,
     plt.tight_layout()
 
     if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         fig.savefig(save_path, dpi=150, bbox_inches="tight",
                     facecolor="white", edgecolor="none")
         print(f"[Plot] Term structure saved to: {save_path}")
@@ -143,17 +146,17 @@ if __name__ == "__main__":
     print(f"Y range: {surface.y_points.min():.2f} – {surface.y_points.max():.2f}")
 
     plot_surface(surface,
-                 save_path="/mnt/user-data/outputs/vol_surface_moneyness.png",
+                 save_path="outputs/vol_surface_moneyness.png",
                  show=False)
 
     plot_term(surface,
-              save_path="/mnt/user-data/outputs/vol_term_structure.png",
+              save_path="outputs/vol_term_structure.png",
               show=False)
     
     builder2 = VolatilitySurfaceBuilder(axis_mode="strike", grid_size=50)
     surface2 = builder2.build(contracts)
     plot_surface(surface2,
-                 save_path="/mnt/user-data/outputs/vol_surface_strike.png",
+                 save_path="outputs/vol_surface_strike.png",
                  show=False)
     
     print("\nAll plots saved.")
