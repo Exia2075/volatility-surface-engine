@@ -3,7 +3,6 @@
 
 import argparse
 import sys
-import traceback
 import config
 
 from utils.helpers import (
@@ -16,6 +15,10 @@ from utils.helpers import (
     validate_axis,
     validate_filter,
 )
+
+from models.volatility_surface import VolatilitySurfaceBuilder
+from data.data_fetcher import MockDataFetcher, DataFetcher
+from visualization.plot_surface import plot_surface, plot_term
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -104,3 +107,104 @@ examples:
     )
 
     return parser
+
+def run(args: argparse.Namespace) -> int:
+    try:
+        if args.mock:
+            ticker = "MOCK"
+        else:
+            ticker = validate_ticker(args.ticker)
+
+        axis = validate_axis(args.axis)
+        filter_mode = validate_filter(args.filter_mode)
+
+        min_T = args.min_maturity / 365.25
+        max_T = args.max_maturity / 365.25
+
+        if min_T >= max_T:
+            raise ValueError("--min-maturity must be less than --max-maturity")
+    except ValueError as e:
+        print_error(str(e))
+        return 1
+    
+    print_header(ticker, axis, filter_mode)
+
+    # fetch data
+    try:
+        if args.mock:
+            fetcher = MockDataFetcher(ticker="MOCK", S=100.0, base_vol=0.20, skew=-0.10, curvature=0.15)
+        else:
+            r = args.rate if args.rate is not None else config.DEFAULT_RISK_FREE_RATE
+            fetcher = DataFetcher(ticker=ticker, r=r)
+
+        contracts = fetcher.fetch(
+            option_type = args.option_type,
+            remove_illiquid = config.REMOVE_ILLIQUID,
+            min_T = min_T,
+            max_T = max_T,
+            otm_only = (filter_mode == "OTM"),
+            itm_only = (filter_mode == "ITM"),
+        )
+
+    except ImportError as e:
+        print_error(str(e))
+        return 1
+    except ValueError as e:
+        print_error(f"data fetch failed: {e}")
+        return 1
+    except Exception as e:
+        print_error(f"unknown error while fetching data: {e}")
+        return 1
+    
+    if not contracts:
+        print_error(
+            "no contracts returned after filtering. "
+            "try relaxing --filter, --min-maturity, or --max-maturity"
+        )
+        return 1
+    
+    print_success(f"fetched {len(contracts)} contract(s) for {ticker}")
+
+    # build volatility surface
+    try:
+        builder = VolatilitySurfaceBuilder(axis_mode = axis, grid_size = args.grid_size)
+        surface = builder.build(contracts)
+
+    except ValueError as e:
+        print_error(f"surface construction failed: {e}")
+        return 1
+    except Exception as e:
+        print_error(f"unknown error building surface: {e}")
+        return 1
+    
+    print_success("volatility surface constructed")
+    print_summary(surface)
+
+    if surface.n_failed > 0:
+        print_warning(
+            f"{surface.n_failed} contract(s) failed to converge: "
+            "these are excluded from the surface (Likely illiquid or stale quotes)"
+        )
+
+    # plot
+    try:
+        save_path = args.output if args.save else None
+        show = not args.no_show
+
+        plot_surface(surface, save_path=save_path, show=show)
+
+        if args.term_structure:
+            ts_path = save_path.replace(".png", "_term_structure.png") if save_path else None
+            plot_term(surface, save_path=save_path, show=show)
+
+    except Exception as e:
+        print_error(f"plotting failed: {e}")
+        return 1
+
+    print_success("OK")
+    return 0
+
+if __name__ == "__main__":
+    parser = build_parser()
+    args = parser.parse_args()
+    sys.exit(run(args))
