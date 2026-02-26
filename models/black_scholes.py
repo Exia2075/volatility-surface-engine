@@ -2,6 +2,8 @@ import math
 from scipy.stats import norm
 
 def _d1(S: float, K: float, T: float, r: float, q: float, sigma: float) -> float:
+    if T <= 0 or sigma <= 0:
+        return 0.0
     return (math.log(S / K) + (r - q + 0.5 * sigma ** 2) * T) / (sigma * math.sqrt(T))
 
 def _d2(d1: float, sigma: float, T: float) -> float:
