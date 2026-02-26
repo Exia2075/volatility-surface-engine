@@ -21,6 +21,18 @@ def bs_call_price(S: float, K: float, T: float, r: float, q: float, sigma: float
     call = S * math.exp(-q * T) * norm.cdf(d1) - K * math.exp(-r * T) * norm.cdf(d2)
     return call
 
+def bs_put_price(S: float, K: float, T: float, r: float, q: float, sigma: float) -> float:
+    if T <= 0:
+        return max(K * math.exp(-r * T) - S * math.exp(-q * T), 0.0)
+    if sigma <= 0:
+        raise ValueError(f"sigma must be positive, got {sigma}")
+    
+    d1 = _d1(S, K, T, r, q, sigma)
+    d2 = _d2(d1, sigma, T)
+
+    put = K * math.exp(-r * T) * norm.cdf(-d2) - S * math.exp(-q * T) * norm.cdf(-d1)
+    return put
+
 def bs_vega(S: float, K: float, T: float, r: float, q: float, sigma: float) -> float:
     if T <= 0 or sigma <= 0:
         return 0.0
