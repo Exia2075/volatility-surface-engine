@@ -23,7 +23,7 @@ def print_error(msg: str):
     print(f"{RED}ERROR{RESET} {msg}", file=sys.stderr)
 
 def print_summary(surface):
-    print(f"Surface Summary")
+    print("Surface Summary")
     print(f"Contracts solved: {surface.n_solved} / {surface.n_total}")
     print(f"Failed: {surface.n_failed}")
     print(f"IV range: {surface.iv_points.min():.1%} - {surface.iv_points.max():.1%}")
