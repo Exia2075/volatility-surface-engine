@@ -57,13 +57,25 @@ def bs_delta(S: float, K: float, T: float, r: float, q: float, sigma: float, opt
 
 if __name__ == "__main__":
     # quick test: ATM call, 1yr, 5% rate, 20% vol
-    # expected: 10.45
+    # expected: 10.45, put = 5.57
 
-    price = bs_call_price(S=100, K=100, T=1.0, r=0.05, q=0.0, sigma=0.20)
-    vega = bs_vega(S=100, K=100, T=1.0, r=0.05, q=0.0, sigma=0.20)
-    print(f"bs call price: {price:.4f}")
-    print(f"bs vega: {vega:.4f}")
+    S, K, T, r, q, sigma = 100, 100, 1.0, 0.05, 0.0, 0.20
 
-    print(f"expired option (T=0): {bs_call_price(100, 90, 0, 0.05, 0, 0.2):.4f}")
-    print(f"deep itm: {bs_call_price(150, 100, 1, 0.05, 0, 0.2):.4f}")
-    print(f"deep otm: {bs_call_price(50, 100, 1, 0.05, 0, 0.2):.4f}")
+    call_price = bs_call_price(S, K, T, r, q, sigma)
+    put_price = bs_call_price(S, K, T, r, q, sigma)
+    vega = bs_vega(S, K, T, r, q, sigma)
+
+    print(f"Call price: {call_price:.4f}")
+    print(f"Put price: {put_price:.4f}")
+    print(f"Vega: {vega:.4f}")
+
+    parity_lhs = call_price - put_price
+    parity_rhs = S * math.exp(-q * T) - K * math.exp(-r * T)
+    print(f"C - P = {parity_lhs:.4f}")
+    print(f"Sexp(-qT) - Kexp(-rT) = {parity_rhs:.4f}")
+    print(f"Difference: {abs(parity_lhs - parity_rhs):.2e}")
+
+    print(f"Expired option (T=0, ITM): {bs_call_price(110, 100, 0, 0.05, 0, 0.2):.4f}")
+    print(f"Expired put (T=0, OTM): {bs_put_price(110, 100, 0, 0.05, 0, 0.2):.4f}")
+    print(f"Deep ITM call: {bs_call_price(150, 100, 1, 0.05, 0, 0.2):.4f}")
+    print(f"Deep OTM call: {bs_call_price(50, 100, 1, 0.05, 0, 0.2):.4f}")
