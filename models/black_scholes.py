@@ -45,6 +45,16 @@ def bs_vega(S: float, K: float, T: float, r: float, q: float, sigma: float) -> f
     d1 = _d1(S, K, T, r, q, sigma)
     return S * math.exp(-q * T) * norm.pdf(d1) * math.sqrt(T)
 
+def bs_delta(S: float, K: float, T: float, r: float, q: float, sigma: float, option_type: str="call") -> float:
+    if T <= 0:
+        if option_type.lower() == "put":
+            return -1.0 if S < K else 0.0
+        return 1.0 if S > K else 0.0 
+    d1 = _d1(S, K, T, r, q, sigma)
+    if option_type.lower() == "put":
+        return math.exp(-q * T) * (norm.cdf(d1) - 1.0)
+    return math.exp(-q * T) * norm.cdf(d1)
+
 if __name__ == "__main__":
     # quick test: ATM call, 1yr, 5% rate, 20% vol
     # expected: 10.45
