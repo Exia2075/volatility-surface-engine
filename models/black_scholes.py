@@ -33,6 +33,11 @@ def bs_put_price(S: float, K: float, T: float, r: float, q: float, sigma: float)
     put = K * math.exp(-r * T) * norm.cdf(-d2) - S * math.exp(-q * T) * norm.cdf(-d1)
     return put
 
+def bs_price(S: float, K: float, T: float, r: float, q: float, sigma: float, option_type: str="call") -> float:
+    if option_type.lower() == "put":
+        return bs_put_price(S, K, T, r, q, sigma)
+    return bs_call_price(S, K, T, r, q, sigma)
+
 def bs_vega(S: float, K: float, T: float, r: float, q: float, sigma: float) -> float:
     if T <= 0 or sigma <= 0:
         return 0.0
