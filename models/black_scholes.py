@@ -62,7 +62,7 @@ if __name__ == "__main__":
     S, K, T, r, q, sigma = 100, 100, 1.0, 0.05, 0.0, 0.20
 
     call_price = bs_call_price(S, K, T, r, q, sigma)
-    put_price = bs_call_price(S, K, T, r, q, sigma)
+    put_price = bs_put_price(S, K, T, r, q, sigma)
     vega = bs_vega(S, K, T, r, q, sigma)
 
     print(f"Call price: {call_price:.4f}")
