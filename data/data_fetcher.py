@@ -4,11 +4,15 @@
 
 from __future__ import annotations
 
-import math, random
+import math
+import random
+import time
 from collections import Counter
 from datetime import datetime, date
 from dataclasses import dataclass 
-from models.black_scholes import bs_call_price
+from typing import Optional
+
+from models.black_scholes import bs_call_price, bs_put_price
 
 random.seed(42)
 
@@ -29,10 +33,20 @@ class OptionContract:
     q: float = 0.0
 
 class DataFetcher:
-    def __init__(self, ticker: str, r: float = 0.05):
+    API_DELAY = 0.1
+
+    def __init__(self, ticker: str, r: float=0.05, q: float=0.0):
         self.ticker = ticker.upper()
         self.r = r
+        self.q = q
         self._yf_ticker = None
+        self._last_fetch_time = 0.0
+
+    def _rate_limit(self):
+        elapsed = time.time() - self._last_fetch_time
+        if elapsed < self.API_DELAY:
+            time.sleep(self.API_DELAY - elapsed)
+        self._last_fetch_time = time.time()
 
     def _load_ticker(self):
         try:
