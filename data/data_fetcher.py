@@ -49,15 +49,25 @@ class DataFetcher:
         self._last_fetch_time = time.time()
 
     def _load_ticker(self):
+        if self._yf_ticker is not None:
+            return
+        
         try:
             import yfinance as yf
         except ImportError:
             raise ImportError(
             "yfinance not installed. Run: pip install yfinance\n"
-            "or use MockDataFetcher for offline testing."
+            "or use --mock for offline testing."
         )
 
         self._yf_ticker = yf.Ticker(self.ticker)
+
+        try:
+            info = self._yf_ticker.fast_info
+            if not info:
+                raise ValueError(f"Ticker '{self.ticker}' not found or no data available")
+        except Exception as e:
+            raise ValueError(f"Could not verify ticker '{self.ticker}': {e}")
 
     def _get_price(self) -> float:
         info = self._yf_ticker.fast_info
