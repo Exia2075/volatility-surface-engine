@@ -96,11 +96,15 @@ class DataFetcher:
         try:
             import yfinance as yf
             tbill = yf.Ticker("^IRX")
-            rate = tbill.fast_info.get("last_price")
-            if rate:
-                return float(rate) / 100.0
-        except Exception:
-            pass
+            rate = tbill.fast_info.get("last_price") or tbill.fast_info.get("previous_close")
+            if rate and rate > 0:
+                rate_decimal = float(rate) / 100.0
+                print(f"[DataFetcher] Risk-free rate from ^IRX: {rate_decimal:.2%}")
+                return rate_decimal
+        except Exception as e:
+            print(f"[DataFetcher] Could not fetch ^IRX rate: {e}")
+
+        print(f"[DataFetcher] Using default risk-free rate: {self.r:.2%}")
         return self.r
 
     def _compute_T(self, expiry_str: str) -> float:
