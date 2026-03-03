@@ -71,10 +71,26 @@ class DataFetcher:
 
     def _get_price(self) -> float:
         info = self._yf_ticker.fast_info
-        price = info.get("last_price") or info.get("regularMarketPrice")
-        if not price:
-            raise ValueError(f"Could not retrieve price for {self.ticker}.")
-        return float(price)
+
+        price_fields = ['last_price', 'regularMarketPrice', 'previous_close', 'open', 'day_low']
+        
+        for field in price_fields:
+            price = info.get(field)
+            if price and price > 0:
+                print(f"[DataFetcher] Got price from '{field}': ${float(price):.2f}")
+                return float(price)
+        
+        try:
+            hist = self._yf_ticker.history(period="1d")
+            if not hist.empty and 'Close' in hist.columns:
+                price = hist['Close'].iloc[-1]
+                if price > 0:
+                    print(f"[DataFetcher] Got price from history: ${float(price):.2f}")
+                    return float(price)
+        except Exception:
+            pass
+
+        raise ValueError(f"Could not retrive price for {self.ticker}")
     
     def _get_risk(self) -> float:
         try:
