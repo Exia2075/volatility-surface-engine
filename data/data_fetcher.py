@@ -113,13 +113,25 @@ class DataFetcher:
         days = (expiry_date - today).days
         return max(days/365.25, 0.0)
     
-    def _mid_price(self, bid: float, ask: float, last: float) -> float | None:
+    def _mid_price(self, bid: float, ask: float, last: float) -> Optional[float]:
         if bid > 0 and ask > 0 and ask >= bid:
             return (bid + ask) / 2.0
         if last > 0:
             return last
         return None
     
+    def _get_dividend_yield(self) -> float:
+        try:
+            info = self._yf_ticker.info
+            if info:
+                div_yield = info.get('dividendYield', 0)
+                if div_yield and div_yield > 0:
+                    print(f"[DataFetcher] Dividend yield: {div_yield:.2%}")
+                    return float(div_yield)
+        except Exception:
+            pass
+        return self.q
+
     def fetch(self,
               option_type: str="call",
               remove_illiquid: bool=True,
