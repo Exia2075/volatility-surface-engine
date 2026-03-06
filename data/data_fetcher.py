@@ -242,6 +242,7 @@ class MockDataFetcher:
                  base_vol: float=0.20,
                  skew: float=-0.10,
                  curvature: float=0.15):
+        
         self.ticker = ticker
         self.S = S
         self.r = r
@@ -252,6 +253,7 @@ class MockDataFetcher:
 
     def _smile_vol(self, K: float, T: float) -> float:
         m = K / self.S - 1.0
+        term = math.sqrt(T) if T > 0 else 1.0
         vol = self.base_vol + self.skew * m + self.curvature * m ** 2
         return max(vol, 0.01)
     
@@ -263,14 +265,19 @@ class MockDataFetcher:
               otm_only: bool=False,
               itm_only: bool=False,
               ) -> list[OptionContract]:
-        expiry_Ts = [7/365, 14/365, 30/365, 60/365, 90/365, 180/365, 270/365, 365/365, 548/365, 730/365]
-        moneyness_grid = [0.70, 0.75, 0.80, 0.85, 0.90, 0.925, 0.95, 0.975, 1.00, 1.025, 1.05, 1.075, 1.10, 1.15, 1.20, 1.25, 1.30]
+        
+        expiry_days = [7, 14, 30, 45, 60, 90, 120, 180, 270, 365, 548, 730]
+
+        moneyness_grid = [
+            0.60, 0.65, 0.70, 0.75, 0.80, 0.90, 0.925, 0.95, 0.975,
+            1.00, 1.025, 1.05, 1.075, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40
+        ]
 
         contracts = []
         print(f"[MockDataFetcher] Generating synthetic chain for {self.ticker} "
               f"(S={self.S}, base_vol={self.base_vol:.0%}, skew={self.skew:+.2f})")
         
-        for T in expiry_Ts:
+        for T in expiry_days:
             if T < min_T or T > max_T:
                 continue
 
@@ -279,13 +286,18 @@ class MockDataFetcher:
             for m in moneyness_grid:
                 K = round(self.S*m, 1)
                 sigma = self._smile_vol(K, T)
-                price = bs_call_price(self.S, K, T, self.r, self.q, sigma)
 
-                noise = random.uniform(-0.005, 0.005) * price
-                market_price = max(price + noise, 0.001)
+                if option_type == "call":
+                    price = bs_call_price(self.S, K, T, self.r, self.q, sigma)
+                else:
+                    price = bs_put_price(self.S, K, T, self.r, self.q, sigma)
 
-                atm_proximity = 1 - abs(m - 1.0) * 5
-                volume = max(0, int(random.gauss(atm_proximity * 500, 100)))
+                noise = random.uniform(-0.003, 0.003) * price
+                market_price = max(price + noise, 0.01)
+
+                atm_proximity = max(0, 1 - abs(m - 1.0) * 3)
+                base_volume = int(random.gauss(atm_proximity * 800, 150))
+                volume = max(0, base_volume)
 
                 contracts.append(OptionContract(
                     ticker = self.ticker,
@@ -307,13 +319,20 @@ class MockDataFetcher:
         if remove_illiquid:
             contracts = [c for c in contracts if c.volume > 0]
         
-        if otm_only:
-            contracts = [c for c in contracts if c.moneyness > 1.0]
-        elif itm_only:
-            contracts = [c for c in contracts if c.moneyness < 1.0]
+        if option_type == "call":
+            if otm_only:
+                contracts = [c for c in contracts if c.moneyness > 1.0]
+            elif itm_only:
+                contracts = [c for c in contracts if c.moneyness < 1.0]
+        else:
+            if otm_only:
+                contracts = [c for c in contracts if c.moneyness < 1.0]
+            elif itm_only:
+                contracts = [c for c in contracts if c.moneyness > 1.0]
 
         after = len(contracts)
         print(f"[MockDataFetcher] {before} contracts generated -> {after} after filtering.")
+
         contracts.sort(key=lambda c: (c.T, c.strike))
         return contracts
     
@@ -332,3 +351,5 @@ if __name__ == "__main__":
     print("\nContracts per expiry:")
     for expiry, count in sorted(expiry_counts.items()):
         print(f"{expiry} -> {count} contracts")
+
+    print(f"\nTotal contracts: {len(contracts)}")
