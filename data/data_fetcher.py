@@ -132,40 +132,41 @@ class DataFetcher:
             pass
         return self.q
 
-    def fetch(self,
-              option_type: str="call",
-              remove_illiquid: bool=True,
-              min_T: float=7/365,
-              max_T: float=2.0,
-              otm_only: bool=False,
-              itm_only: bool=False,
-              ) -> list[OptionContract]:
-        if self._yf_ticker is None:
-            self._load_ticker()
-
+    def fetch(self, option_type: str="call", remove_illiquid: bool=True, min_T: float=7/365, max_T: float=2.0, otm_only: bool=False, itm_only: bool=False) -> list[OptionContract]:
+        self._load_ticker()
         print(f"[DataFetcher] Fetching data for {self.ticker}...")
 
         S = self._get_price()
         r = self._get_risk()
-        print(f"[DataFetcher] Underlying price: ${S:.2f} | Risk-free rate: {r:.2f}")
+        q = self._get_dividend_yield()
+        print(f"[DataFetcher] Underlying price: ${S:.2f} | Risk-free rate: {r:.2f} | Div yield: {q:.2%}")
 
-        expiries = self._yf_ticker.options
+        try:
+            expiries = self._yf_ticker.options
+        except Exception as e:
+            raise ValueError(f"Could not fetch expiration dates for {self.ticker}: {e}")
+        
         if not expiries:
             raise ValueError(f"No options available for {self.ticker}")
+        
         print(f"[DataFetcher] Found {len(expiries)} expiry dates.")
 
         contracts: list[OptionContract] = []
+        failed = 0
 
-        for expiry_str in expiries:
+        for i, expiry_str in enumerate(expiries):
             T = self._compute_T(expiry_str)
 
             if T < min_T or T > max_T:
                 continue
 
+            self._rate_limit()
+
             try: 
                 chain = self._yf_ticker.option_chain(expiry_str)
             except Exception as e:
                 print(f"[DataFetcher] Could not fetch chain for {expiry_str}: {e}")
+                failed = 0
                 continue
 
             df = chain.calls if option_type == "call" else chain.puts
@@ -179,7 +180,7 @@ class DataFetcher:
                 oi = int(row.get("openInterest", 0) or 0)
 
                 market_price = self._mid_price(bid, ask, last)
-                if market_price is None:
+                if market_price is None or market_price <= 0:
                     continue
 
                 moneyness = strike/S
@@ -200,18 +201,34 @@ class DataFetcher:
                 )
                 contracts.append(contract)
             
+        if failed > 0:
+            print(f"[DataFetcher] Warning: {failed} chains failed to fetch")
+
         before = len(contracts)
 
         if remove_illiquid:
             contracts = [c for c in contracts if c.volume > 0]
             
-        if otm_only:
-            contracts = [c for c in contracts if c.moneyness > 1.0]
-        elif itm_only:
-            contracts = [c for c in contracts if c.moneyness < 1.0]
+        if option_type == "call":
+            if otm_only:
+                contracts = [c for c in contracts if c.moneyness > 1.0]
+            elif itm_only:
+                contracts = [c for c in contracts if c.moneyness < 1.0]
+        else:
+            if otm_only:
+                contracts = [c for c in contracts if c.moneyness < 1.0]
+            elif itm_only:
+                contracts = [c for c in contracts if c.moneyness > 1.0]
             
         after = len(contracts)
         print(f"[DataFetcher] {before} contracts fetched -> {after} after filtering.")
+
+        if not contracts:
+            raise ValueError(
+                "No contracts remaining after filtering. "
+                "Try relaxing filters: --filter all, adjust --min-maturity/--max-maturity, " 
+                "or use a more liquid ticker."
+            )
 
         contracts.sort(key=lambda c: (c.T, c.strike))
         return contracts
