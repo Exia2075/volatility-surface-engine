@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
+
+from datetime import datetime
 import numpy as np
 from scipy.interpolate import RBFInterpolator
 
@@ -31,10 +33,11 @@ class SolvedContract:
     def moneyness(self): 
         return self.contract.moneyness
     
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True)
 class VolatilitySurface:
     ticker: str
     axis_mode: str
+    option_type: str
     
     T_points:     np.ndarray 
     y_points:     np.ndarray  
@@ -49,6 +52,9 @@ class VolatilitySurface:
     n_failed: int
     S: float
 
+    timestamp: datetime
+    failed_reasons: dict[str, int]
+
 class VolatilitySurfaceBuilder:
     def __init__(self, axis_mode: str="moneyness", grid_size: int=50):
         if axis_mode not in ("strike", "moneyness"):
@@ -56,9 +62,10 @@ class VolatilitySurfaceBuilder:
         self.axis_mode = axis_mode
         self.grid_size = grid_size
 
-    def _solve_all(self, contracts: list[OptionContract]) -> list[SolvedContract]:
+    def _solve_all(self, contracts: list[OptionContract]) -> tuple[list[SolvedContract], dict[str, int]]:
         solved = []
-        failed = 0
+        failed_reasons: dict[str , int] = {}
+
         for c in contracts: 
             res = compute_implied_vol(
                 market_price = c.market_price,
@@ -69,13 +76,24 @@ class VolatilitySurfaceBuilder:
                 q = c.q,
             )
             solved.append(SolvedContract(contract=c, iv_res = res))
+
             if not res.converged:
-                failed += 1
+                reason = res.error or "unknown"
+                reason_key = reason[:50] if len(reason) > 50 else reason
+                failed_reasons[reason_key] = failed_reasons.get(reason_key, 0) + 1
         
-        converged = len(solved) - failed
-        print(f"[Surface] IV solved: {converged}/{len(contracts)} contracts converged "
-              f"({failed} failed)")
-        return solved
+        n_converged = sum(1 for s in solved if s.iv_res.converged)
+        n_failed = len(solved) - n_converged
+
+        print(f"[Surface] IV solved: {n_converged}/{len(contracts)} contracts converged "
+              f"({n_failed} failed)")
+        
+        if failed_reasons:
+            print(f"[Surface] Failure reasons:")
+            for reason, count in sorted(failed_reasons.items(), key=lambda x: -x[1]):
+                print(f"{reason}: {count}")
+
+        return solved, failed_reasons
 
     def _interpolate_grid(self, 
                           T_pts: np.ndarray,
@@ -109,11 +127,12 @@ class VolatilitySurfaceBuilder:
 
         S = contracts[0].S
         ticker = contracts[0].ticker
+        option_type = contracts[0].option_type
 
         print(f"[Surface] Building {self.axis_mode} surface for {ticker} "
               f"({len(contracts)} contracts)...")
         
-        solved = self._solve_all(contracts)
+        solved, failed_reasons = self._solve_all(contracts)
 
         good = [s for s in solved if s.iv_res.converged]
         n_failed = len(solved) - len(good)
@@ -125,8 +144,10 @@ class VolatilitySurfaceBuilder:
             )
         
         T_pts  = np.array([s.T for s in good])
-        y_pts  = np.array([s.moneyness if self.axis_mode == "moneyness"
-                           else s.strike for s in good])
+        y_pts  = np.array([
+            s.moneyness if self.axis_mode == "moneyness" else s.strike 
+            for s in good
+        ])
         iv_pts = np.array([s.implied_vol for s in good])
 
         T_grid, y_grid, iv_grid = self._interpolate_grid(T_pts, y_pts, iv_pts)
@@ -134,6 +155,7 @@ class VolatilitySurfaceBuilder:
         return VolatilitySurface(
             ticker = ticker,
             axis_mode = self.axis_mode,
+            option_type = option_type,
             T_points = T_pts,
             y_points = y_pts,
             iv_points = iv_pts,
@@ -144,4 +166,6 @@ class VolatilitySurfaceBuilder:
             n_solved = len(good),
             n_failed = n_failed,
             S = S,
+            timestamp = datetime.now(),
+            failed_reasons = failed_reasons,
         )
