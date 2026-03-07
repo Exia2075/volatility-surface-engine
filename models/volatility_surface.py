@@ -172,6 +172,21 @@ class VolatilitySurfaceBuilder:
                 "Try relaxing --filter or using a more liquid ticker."
             )
 
+        # Remove outliers using IQR method
+        q1, q3 = np.percentile(iv_pts, [25, 75])
+        iqr = q3 - q1
+        lowerBound = q1 - 1.5 * iqr
+        upperBound = q3 + 1.5 * iqr
+
+        outlierMask = (iv_pts >= lowerBound) & (iv_pts <= upperBound)
+        n_outliers = len(iv_pts) - outlierMask.sum()
+
+        if n_outliers > 0:
+            print(f"[Surface] Removing {n_outliers} IV outliers")
+            T_pts = T_pts[outlierMask]
+            y_pts = y_pts[outlierMask]
+            iv_pts = iv_pts[outlierMask]
+
         T_grid, y_grid, iv_grid = self._interpolate_grid(T_pts, y_pts, iv_pts)
 
         return VolatilitySurface(
