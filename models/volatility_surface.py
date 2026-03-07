@@ -115,10 +115,17 @@ class VolatilitySurfaceBuilder:
             (y_grid.ravel() - y_pts.min()) / y_scale,
         ])
 
-        rbf = RBFInterpolator(points_norm, iv_pts, kernel='thin_plate_spline', smoothing=0.0001)
+        rbf = RBFInterpolator(
+            points_norm, 
+            iv_pts, 
+            kernel='thin_plate_spline', 
+            smoothing=0.001,
+        )
         iv_grid = rbf(query_norm).reshape(T_grid.shape)
 
-        iv_grid = np.clip(iv_grid, 0.01, 2.0)
+        # Clip to reasonable range (5% to 200% vol)
+        iv_grid = np.clip(iv_grid, 0.05, 2.0)
+
         return T_grid, y_grid, iv_grid
     
     def build(self, contracts: list[OptionContract]) -> VolatilitySurface:
@@ -134,6 +141,7 @@ class VolatilitySurfaceBuilder:
         
         solved, failed_reasons = self._solve_all(contracts)
 
+        # Filter to converged only
         good = [s for s in solved if s.iv_res.converged]
         n_failed = len(solved) - len(good)
 
@@ -149,6 +157,20 @@ class VolatilitySurfaceBuilder:
             for s in good
         ])
         iv_pts = np.array([s.implied_vol for s in good])
+
+        # Validate maturity spread
+        if T_pts.max() - T_pts.min() < 1/365:
+            raise ValueError(
+                "Insufficient maturity spread, all options expire at nearly the same time. "
+                "Try increasing --max-maturity or using a ticker with more expiration dates." 
+            )
+        
+        # Validate strike spread
+        if y_pts.max() - y_pts.min() < 0.01:
+            raise ValueError(
+                "Insufficient strike spread, all options have nearly the same strike. "
+                "Try relaxing --filter or using a more liquid ticker."
+            )
 
         T_grid, y_grid, iv_grid = self._interpolate_grid(T_pts, y_pts, iv_pts)
 
