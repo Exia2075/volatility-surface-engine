@@ -206,3 +206,30 @@ class VolatilitySurfaceBuilder:
             timestamp = datetime.now(),
             failed_reasons = failed_reasons,
         )
+    
+if __name__ == "__main__":
+    from data.data_fetcher import MockDataFetcher
+
+    fetcher = MockDataFetcher(
+        ticker = "MOCK",
+        S = 100.0,
+        base_vol = 0.20,
+        skew = 0.10, 
+        curvature = 0.15,
+    )
+    contracts = fetcher.fetch(option_type="call", remove_illiquid=True)
+
+    builder = VolatilitySurfaceBuilder(axis_mode="moneyness", grid_size=50)
+    surface = builder.build(contracts)
+
+    print("Surface stats (moneyness mode):")
+    print(f"IV range: {surface.iv_points.min():.1%} - {surface.iv_points.max():.1%}")
+    print(f"T range: {surface.T_points.min()*365:.0f}d - {surface.T_points.max()*365:.0f}d")
+    print(f"Y range: {surface.y_points.min():.2f} - {surface.y_points.max():.2f}")
+    print(f"Grid: {surface.T_grid.shape}")
+
+    builder2 = VolatilitySurfaceBuilder(axis_mode="strike", grid_size=50)
+    surface2 = builder2.build(contracts)
+
+    print("Surface stats (strike mode):")
+    print(f"Strike range: ${surface2.y_points.min():.1f} - ${surface2.y_points.max():.1f}")
