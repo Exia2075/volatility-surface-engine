@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections import defaultdict
+from datetime import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,7 +34,7 @@ def plot_surface(surface: VolatilitySurface,
         surface.y_points,
         surface.iv_points * 100,
         color = "black",
-        s = 12,
+        s = 15,
         alpha = 0.6,
         zorder = 5,
         label = "Market quotes",
@@ -44,18 +45,26 @@ def plot_surface(surface: VolatilitySurface,
     else:
         atm_val = surface.S
 
-    T_line  = np.linspace(surface.T_grid.min() * 365, surface.T_grid.max() * 365, 100)
+    T_line  = np.linspace(
+        surface.T_grid.min() * 365, 
+        surface.T_grid.max() * 365, 
+        100,
+    )
     atm_arr = np.full_like(T_line, atm_val)
 
-    mid_row = surface.iv_grid[surface.iv_grid.shape[0] // 2, :]
-    iv_line = np.interp(T_line,
-                        np.linspace(surface.T_grid.min() * 365,
-                                    surface.T_grid.max() * 365,
-                                    len(mid_row)),
-                        mid_row * 100)
+    mid_idx = surface.iv_grid.shape[0] // 2
+    mid_row = surface.iv_grid[mid_idx, :]
+
+    T_grid_flat = np.linspace(
+        surface.T_grid.min() * 365,
+        surface.T_grid.max() * 365,
+        len(mid_row),
+    )
+    iv_line = np.interp(T_line, T_grid_flat, mid_row * 100)
 
     ax.plot(T_line, atm_arr, iv_line,
-            color="navy", linewidth=2.5, alpha=0.9, label="ATM term structure")
+            color="navy", linewidth=2.5, alpha=0.9, 
+            label="ATM term structure")
     
     cbar = fig.colorbar(surf, ax=ax, shrink=0.5, aspect=12, pad=0.05)
     cbar.set_label("Implied Volatility (%)", fontsize=11)
@@ -64,14 +73,13 @@ def plot_surface(surface: VolatilitySurface,
     ax.set_xlabel("Days to Expiry", fontsize=11, labelpad=10)
     ax.set_ylabel(y_label, fontsize=11, labelpad=10)
     ax.set_zlabel("Implied Vol (%)", fontsize=11, labelpad=10)
-
     ax.zaxis.set_major_formatter(mtick.FormatStrFormatter("%.0f%%"))
 
     title_lines = [
         f"{surface.ticker} — Implied Volatility Surface  ({surface.axis_mode.capitalize()} mode)",
-        f"Underlying: ${surface.S:.2f}   |   "
-        f"{surface.n_solved}/{surface.n_total} contracts solved   |   "
-        f"Grid: {surface.T_grid.shape[0]}×{surface.T_grid.shape[1]}",
+        f"Underlying: ${surface.S:.2f}"
+        f"{surface.n_solved}/{surface.n_total} contracts solved"
+        f"Grid: {surface.T_grid.shape[0]} by {surface.T_grid.shape[1]}",
     ]
     ax.set_title("\n".join(title_lines), fontsize=12, pad=15)
 
@@ -81,7 +89,7 @@ def plot_surface(surface: VolatilitySurface,
     plt.tight_layout()
 
     if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
         fig.savefig(save_path, dpi=150, bbox_inches="tight",
                     facecolor="white", edgecolor="none")
         print(f"[Plot] Surface saved to: {save_path}")
