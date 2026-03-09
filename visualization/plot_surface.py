@@ -138,10 +138,11 @@ def plot_term(surface: VolatilitySurface,
     plt.tight_layout()
 
     if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
         fig.savefig(save_path, dpi=150, bbox_inches="tight",
                     facecolor="white", edgecolor="none")
         print(f"[Plot] Term structure saved to: {save_path}")
+    
     if show:
         plt.show()
 
