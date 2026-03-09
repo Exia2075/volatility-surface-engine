@@ -124,7 +124,10 @@ def plot_term(surface: VolatilitySurface,
 
     ax.set_xlabel("Days to Expiry", fontsize=12)
     ax.set_ylabel("ATM Implied Volatility (%)", fontsize=12)
+
+    title = f"{surface.ticker} - ATM Volatility Term Structure ({surface.option_type.upper()})"
     ax.set_title(f"{surface.ticker} - ATM Volatility Term Structure", fontsize=13)
+    
     ax.yaxis.set_major_formatter(mtick.FormatStrFormatter("%.1f%%"))
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
