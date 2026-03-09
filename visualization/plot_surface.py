@@ -102,13 +102,16 @@ def plot_surface(surface: VolatilitySurface,
 def plot_term(surface: VolatilitySurface, 
               save_path: str | None = None,
               show: bool = True) -> plt.Figure:
-    fig, ax = plt.subplots(figsize=(9,5))
+    fig, ax = plt.subplots(figsize=(10,6))
 
+    # Group contracts by maturity
     by_T: dict[float, list] = defaultdict(list)
     for T, y, iv in zip(surface.T_points, surface.y_points, surface.iv_points):
         by_T[round(T, 4)].append((y, iv))
 
+    # Find ATM (closest to moneyness=1.0 or Strike=S)
     atm_target = 1.0 if surface.axis_mode == "moneyness" else surface.S
+
     Ts, atm_ivs = [], []
     for T, points in sorted(by_T.items()):
         closest = min(points, key=lambda p: abs(p[0] - atm_target))
