@@ -119,7 +119,7 @@ def plot_term(surface: VolatilitySurface,
         atm_ivs.append(closest[1] * 100)
 
     ax.plot(Ts, atm_ivs, "o-", color="steelblue", linewidth=2.5,
-            markersize=8, markerfacecolor="white", markeredgewidth=2)
+            markersize=10, markerfacecolor="white", markeredgewidth=2)
     ax.fill_between(Ts, atm_ivs, alpha=0.15, color="steelblue")
 
     ax.set_xlabel("Days to Expiry", fontsize=12)
