@@ -127,9 +127,14 @@ def plot_term(surface: VolatilitySurface,
 
     title = f"{surface.ticker} - ATM Volatility Term Structure ({surface.option_type.upper()})"
     ax.set_title(f"{surface.ticker} - ATM Volatility Term Structure", fontsize=13)
-    
+
     ax.yaxis.set_major_formatter(mtick.FormatStrFormatter("%.1f%%"))
     ax.grid(True, alpha=0.3)
+
+    ax.text(0.02, 0.98, f"Generated: {surface.timestamp.strftime('%Y-%m-%d %H:%M')}",
+            transform=ax.transAxes, fontsize=9, verticalalignment='top',
+            color='gray')
+    
     plt.tight_layout()
 
     if save_path:
