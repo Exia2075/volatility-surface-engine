@@ -148,6 +148,67 @@ def plot_term(surface: VolatilitySurface,
 
     return fig
 
+def plot_smile(surface: VolatilitySurface, 
+               T_target: float | None = None,
+               save_path: str | None = None,
+               show: bool = True) -> plt.Figure:
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    by_T: dict[float, list] = defaultdict(list)
+    for T, y, iv in zip(surface.T_points, surface.y_points, surface.iv_points):
+        by_T[round(T, 4)].append((y, iv))
+    
+    sorted_Ts = sorted(by_T.keys())
+    if T_target:
+        closest_T = min(sorted_Ts, key=lambda t: abs(t - T_target))
+        Ts_to_plot = [closest_T]
+    else:
+        n = len(sorted_Ts)
+        if n >= 3:
+            idxs = [0, n // 2, n - 1]
+            Ts_to_plot = [sorted_Ts[i] for i in idxs]
+        else:
+            Ts_to_plot = sorted_Ts
+    
+    colors = ['steelblue', 'coral', 'seagreen', 'purple', 'orange']
+
+    for i, T in enumerate(Ts_to_plot):
+        points = by_T[T]
+        y_vals = [p[0] for p in points]
+        iv_vals = [p[1] * 100 for p in points]
+
+        sorted_pairs = sorted(zip(y_vals, iv_vals))
+        y_sorted = [p[0] for p in sorted_pairs]
+        iv_sorted = [p[1] for p in sorted_pairs]
+
+        ax.plot(y_sorted, iv_sorted, "o-",
+                color=colors[i % len(colors)],
+                linewidth=2, markersize=6,
+                label=f"T = {T*365:.0f} days")
+        
+    xlabel = "Moneyness (K/S)" if surface.axis_mode == "moneyness" else "Strike ($)"
+    ax.set_xlabel(xlabel, fontsize=12)
+    ax.set_ylabel("Implied Volatility (%)", fontsize=12)
+    ax.set_title(f"{surface.ticker} - Volatility Smile ({surface.option_type.upper()})", fontsize=13)
+
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter("%.1f%%"))
+    ax.legend(fontsize=10)
+    ax.grind(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    if save_path:
+        os.makedirs(os.path.dirname(save_path) or ".", exist_ok = True)
+        fig.savefig(save_path, dpi=150, bbox_inches="tight",
+                    facecolor="white", edgecolor="none")
+        print(f"[Plot] Smile saved to: {save_path}")
+
+    if show:
+        plt.show()
+    
+    return fig
+
 if __name__ == "__main__":
     from data.data_fetcher import MockDataFetcher
     from models.volatility_surface import VolatilitySurfaceBuilder
