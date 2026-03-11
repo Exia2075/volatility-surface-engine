@@ -233,10 +233,14 @@ if __name__ == "__main__":
               save_path="outputs/vol_term_structure.png",
               show=False)
     
+    os.makedirs("outputs", exist_ok=True)
+
+    plot_surface(surface, save_path="outputs/vol_surface_moneyness.png", show=False)
+    plot_term(surface, save_path="outputs/vol_term_structure.png", show=False)
+    plot_smile(surface, save_path="outputs/vol_smile.png", show=False)
+
     builder2 = VolatilitySurfaceBuilder(axis_mode="strike", grid_size=50)
     surface2 = builder2.build(contracts)
-    plot_surface(surface2,
-                 save_path="outputs/vol_surface_strike.png",
-                 show=False)
+    plot_surface(surface2, save_path="outputs/vol_surface_strike.png", show=False)
     
-    print("\nAll plots saved.")
+    print("\nAll plots saved to outputs.")
