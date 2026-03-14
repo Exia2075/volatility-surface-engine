@@ -19,6 +19,10 @@ SIGMA_HIGH = 10.0
 DEFAULT_AXIS_MODE = "moneyness"
 DEFAULT_GRID_SIZE = 50
 
+RBF_SMOOTHING = 0.001
+IV_CLIP_LOW = 0.05
+IV_CLIP_HIGH = 2.0
+
 DEFAULT_COLORMAP = "RdYlGn_r" # red = high vol, green = low vol
 DEFAULT_SAVE_PATH = "vol_surface.png"
 
