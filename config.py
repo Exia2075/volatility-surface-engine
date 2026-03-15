@@ -26,4 +26,7 @@ IV_CLIP_HIGH = 2.0
 DEFAULT_COLORMAP = "RdYlGn_r" # red = high vol, green = low vol
 DEFAULT_SAVE_PATH = "vol_surface.png"
 
+PLOT_DPI = 150
+PLOT_FIGSIZE = (14, 9)
+
 DB_PATH = "vol_surface_history.db" # for future storage
