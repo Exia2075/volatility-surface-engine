@@ -29,4 +29,8 @@ DEFAULT_SAVE_PATH = "vol_surface.png"
 PLOT_DPI = 150
 PLOT_FIGSIZE = (14, 9)
 
+API_RATE_LIMIT_DELAY = 0.1 # Seconds between API calls (rate limiting)
+API_MAX_RETRIES = 3
+API_RETRY_DELAY = 1.0 # Seconds to wait before retry
+
 DB_PATH = "vol_surface_history.db" # for future storage
