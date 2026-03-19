@@ -34,3 +34,4 @@ API_MAX_RETRIES = 3
 API_RETRY_DELAY = 1.0 # Seconds to wait before retry
 
 DB_PATH = "vol_surface_history.db" # for future storage
+DB_BATCH_SIZE = 100 # Number of surfaces to batch before commit
