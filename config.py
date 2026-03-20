@@ -35,3 +35,6 @@ API_RETRY_DELAY = 1.0 # Seconds to wait before retry
 
 DB_PATH = "vol_surface_history.db" # for future storage
 DB_BATCH_SIZE = 100 # Number of surfaces to batch before commit
+
+LOG_LEVEL = "INFO"
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
