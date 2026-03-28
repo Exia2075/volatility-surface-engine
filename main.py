@@ -38,18 +38,18 @@ examples:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument(
         "--ticker", type=str,
-        help="ticker symbol to fetch live option data for (e.g. AAPL, SPY, TSLA)",
+        help="Ticker symbol to fetch live option data for (e.g. AAPL, SPY, TSLA)",
     )
     source.add_argument(
         "--mock", action="store_true",
-        help="run in offline demo mode using synthetic option data (no API needed)",
+        help="Run in offline demo mode using synthetic option data (no API needed)",
     )
 
     # Option type
     parser.add_argument(
         "--option-type", type=str, default=config.DEFAULT_OPTION_TYPE,
         choices=["call", "put"],
-        help="option type to use (default: %(default)s)",
+        help="Option type to use (default: %(default)s)",
     )
 
     # Surface options
@@ -62,14 +62,14 @@ examples:
         "--filter", type=str, default="all",
         choices=["all", "OTM", "ITM"],
         dest="filter_mode",
-        help="filter contracts: all, OTM (out-of-the-money), or ITM (default: %(default)s)",
+        help="Filter contracts: all, OTM (out-of-the-money), or ITM (default: %(default)s)",
     )
 
     # Maturity filtering
     parser.add_argument(
         "--min-maturity", type=int, default=config.MIN_T_DAYS,
         metavar="DAYS",
-        help="minimum days to expiry (default: %(default)s)",
+        help="Minimum days to expiry (default: %(default)s)",
     )
     parser.add_argument(
         "--max-maturity", type=int, default=config.MAX_T_DAYS,
@@ -80,32 +80,47 @@ examples:
     # Output
     parser.add_argument(
         "--save", action="store_true",
-        help="save the surface plot to a file instead of (or in addition to) displaying it",
+        help="Save the surface plot to a file instead of (or in addition to) displaying it",
     )
     parser.add_argument(
         "--output", type=str, default=config.DEFAULT_SAVE_PATH,
         metavar="FILE",
-        help="output file path when --save is used (default: %(default)s)",
+        help="Output file path when --save is used (default: %(default)s)",
     )
     parser.add_argument(
         "--no-show", action="store_true",
-        help="don't display the interactive plot window (useful for headless environments)",
+        help="Don't display the interactive plot window (useful for headless environments)",
     )
     parser.add_argument(
         "--term-structure", action="store_true",
-        help="also plot the ATM volatility term structure (2D)",
+        help="Also plot the ATM volatility term structure (2D)",
+    )
+    parser.add_argument(
+        "--smile", action="store_true",
+        help="Also plot the volatility smile for key maturities",
     )
     parser.add_argument(
         "--grid-size", type=int, default=config.DEFAULT_GRID_SIZE,
         metavar="N",
-        help="interpolation grid resolution NxN (default: %(default)s)",
+        help="Interpolation grid resolution N by N (default: %(default)s)",
     )
 
-    # rate override
+    # Rate override
     parser.add_argument(
         "--rate", type=float, default=None,
         metavar="RATE",
-        help="override the risk-free rate (e.g. 0.05 for 5%%). fetched from ^IRX if omitted.",
+        help="Override the risk-free rate (e.g. 0.05 for 5%%). fetched from ^IRX if omitted.",
+    )
+    parser.add_argument(
+        "--dividend-yield", type=float, default=0.0,
+        metavar="YIELD",
+        help="Dividend yield for the underlying (default: %(default)s)",
+    )
+
+    # Advanced
+    parser.add_argument(
+        "--store", action="store_true",
+        help="Store the surface in the historical database",
     )
 
     return parser
