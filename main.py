@@ -18,7 +18,7 @@ from utils.helpers import (
 
 from models.volatility_surface import VolatilitySurfaceBuilder
 from data.data_fetcher import MockDataFetcher, DataFetcher
-from visualization.plot_surface import plot_surface, plot_term
+from visualization.plot_surface import plot_surface, plot_term, plot_smile
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -34,7 +34,7 @@ examples:
         """,
     )
 
-    # required / mock
+    # Required / Mock (mutally exclusive)
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument(
         "--ticker", type=str,
@@ -45,7 +45,14 @@ examples:
         help="run in offline demo mode using synthetic option data (no API needed)",
     )
 
-    # surface options
+    # Option type
+    parser.add_argument(
+        "--option-type", type=str, default=config.DEFAULT_OPTION_TYPE,
+        choices=["call", "put"],
+        help="option type to use (default: %(default)s)",
+    )
+
+    # Surface options
     parser.add_argument(
         "--axis", type=str, default=config.DEFAULT_AXIS_MODE,
         choices=["moneyness", "strike"],
@@ -57,13 +64,8 @@ examples:
         dest="filter_mode",
         help="filter contracts: all, OTM (out-of-the-money), or ITM (default: %(default)s)",
     )
-    parser.add_argument(
-        "--option-type", type=str, default=config.DEFAULT_OPTION_TYPE,
-        choices=["call", "put"],
-        help="option type to use (default: %(default)s)",
-    )
 
-    # maturity filtering
+    # Maturity filtering
     parser.add_argument(
         "--min-maturity", type=int, default=config.MIN_T_DAYS,
         metavar="DAYS",
@@ -75,7 +77,7 @@ examples:
         help="Maximum days to expiry (default: %(default)s)",
     )
 
-    # output
+    # Output
     parser.add_argument(
         "--save", action="store_true",
         help="save the surface plot to a file instead of (or in addition to) displaying it",
